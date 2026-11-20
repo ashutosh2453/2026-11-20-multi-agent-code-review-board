@@ -20,7 +20,9 @@ def to_markdown(r: Review, title: str = "Multi-agent code review") -> str:
         lines += ["| | Location | Finding | Agent |", "|---|---|---|---|"]
         for f in r.findings:
             loc = f"`{f.path}:{f.line}`" if f.line else f"`{f.path}`"
-            msg = f.message.replace("|", "\\|") + (f"<br>↳ {f.suggestion.replace('|', '\\|')}" if f.suggestion else "")
+            # No backslashes inside f-string expressions: that needs Python 3.12+ (PEP 701).
+            escaped_suggestion = f.suggestion.replace("|", "\\|")
+            msg = f.message.replace("|", "\\|") + (f"<br>↳ {escaped_suggestion}" if f.suggestion else "")
             agents = f.agent + (f" (+{', '.join(f.also_flagged_by)})" if f.also_flagged_by else "")
             lines.append(f"| {ICON[f.severity]} {f.severity.label} | {loc} | {msg} | {agents} |")
         lines.append("")
