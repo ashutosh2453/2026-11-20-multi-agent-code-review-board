@@ -77,7 +77,7 @@ def main(argv: list[str] | None = None) -> int:
     title = f"Multi-agent review: {meta['title']}" if meta else "Multi-agent code review"
     rendered = {"markdown": lambda: to_markdown(result, title), "json": lambda: to_json(result), "sarif": lambda: to_sarif(result)}[args.format]()
     if args.out:
-        args.out.write_text(rendered, encoding="utf-8")
+        args.out.write_text(rendered, encoding="utf-8", newline="\n")
         print(f"report written to {args.out}", file=sys.stderr)
     else:
         print(rendered)
