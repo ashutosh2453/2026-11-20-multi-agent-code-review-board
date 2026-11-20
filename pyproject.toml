@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "multi-agent-code-review-board"
+version = "0.1.0"
+description = "Parallel multi-agent code review: security, complexity, tests and maintainability reviewers reconciled by a moderator (LangGraph)"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = ["langgraph>=1.0,<2", "httpx>=0.27"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "respx>=0.21"]
+
+[project.scripts]
+review-board = "review_board.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["review_board*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
