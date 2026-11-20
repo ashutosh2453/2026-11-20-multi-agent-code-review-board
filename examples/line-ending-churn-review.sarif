@@ -1,0 +1,252 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "multi-agent-code-review-board",
+          "version": "0.1.0",
+          "informationUri": "https://github.com/ashutosh2453/2026-11-20-multi-agent-code-review-board",
+          "rules": [
+            {
+              "id": "maintainability/line-ending-churn",
+              "shortDescription": {
+                "text": "line ending churn"
+              },
+              "properties": {
+                "tags": [
+                  "maintainability"
+                ]
+              }
+            },
+            {
+              "id": "tests/missing-tests",
+              "shortDescription": {
+                "text": "missing tests"
+              },
+              "properties": {
+                "tags": [
+                  "tests"
+                ]
+              }
+            },
+            {
+              "id": "complexity/cyclomatic-complexity",
+              "shortDescription": {
+                "text": "cyclomatic complexity"
+              },
+              "properties": {
+                "tags": [
+                  "complexity"
+                ]
+              }
+            },
+            {
+              "id": "complexity/long-function",
+              "shortDescription": {
+                "text": "long function"
+              },
+              "properties": {
+                "tags": [
+                  "complexity"
+                ]
+              }
+            },
+            {
+              "id": "maintainability/missing-docstring",
+              "shortDescription": {
+                "text": "missing docstring"
+              },
+              "properties": {
+                "tags": [
+                  "maintainability"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "maintainability/line-ending-churn",
+          "level": "warning",
+          "message": {
+            "text": "Line endings changed from LF to CRLF (309 lines removed, 292 added): the real change is hidden Restore the original endings (git add --renormalize .) and add a .gitattributes, e.g. `* text=auto`."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "README.md"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "medium",
+            "confidence": 0.95
+          }
+        },
+        {
+          "ruleId": "tests/missing-tests",
+          "level": "warning",
+          "message": {
+            "text": "2 changed public function(s) without tests (the changed tests never reference them): `inputs`, `main` Add or update tests that call these functions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "benchmark.py"
+                },
+                "region": {
+                  "startLine": 18
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "medium",
+            "confidence": 0.8
+          }
+        },
+        {
+          "ruleId": "maintainability/line-ending-churn",
+          "level": "warning",
+          "message": {
+            "text": "Line endings changed from LF to CRLF (629 lines removed, 651 added): the real change is hidden Restore the original endings (git add --renormalize .) and add a .gitattributes, e.g. `* text=auto`."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "nextgen_quicksort.py"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "medium",
+            "confidence": 0.95
+          }
+        },
+        {
+          "ruleId": "tests/missing-tests",
+          "level": "warning",
+          "message": {
+            "text": "1 changed public function(s) without tests (the changed tests never reference them): `SortMetrics.to_dict` Add or update tests that call these functions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "nextgen_quicksort.py"
+                },
+                "region": {
+                  "startLine": 49
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "medium",
+            "confidence": 0.75
+          }
+        },
+        {
+          "ruleId": "complexity/cyclomatic-complexity",
+          "level": "warning",
+          "message": {
+            "text": "`NextGenQuickSort._quicksort` has cyclomatic complexity 12 (limit 10) Split it into smaller functions or replace branching with a lookup table."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "nextgen_quicksort.py"
+                },
+                "region": {
+                  "startLine": 152
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "medium",
+            "confidence": 0.9
+          }
+        },
+        {
+          "ruleId": "complexity/long-function",
+          "level": "note",
+          "message": {
+            "text": "`NextGenQuickSort._quicksort` is 71 lines long (limit 60) Extract cohesive steps into helpers."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "nextgen_quicksort.py"
+                },
+                "region": {
+                  "startLine": 152
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "low",
+            "confidence": 0.8
+          }
+        },
+        {
+          "ruleId": "maintainability/missing-docstring",
+          "level": "note",
+          "message": {
+            "text": "New public function `inputs` has no docstring Document what it does, its arguments and its return value."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "benchmark.py"
+                },
+                "region": {
+                  "startLine": 18
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "info",
+            "confidence": 0.75
+          }
+        },
+        {
+          "ruleId": "maintainability/missing-docstring",
+          "level": "note",
+          "message": {
+            "text": "New public function `main` has no docstring Document what it does, its arguments and its return value."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "benchmark.py"
+                },
+                "region": {
+                  "startLine": 37
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "info",
+            "confidence": 0.7
+          }
+        }
+      ]
+    }
+  ]
+}

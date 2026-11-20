@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e ".[dev]"
+      - run: pytest -q
+
+  self-review:
+    # Dogfooding: the board reviews its own latest change and publishes SARIF to code scanning.
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install .
+      - name: Review the latest change
+        run: |
+          BASE=${{ github.event.pull_request.base.sha || 'HEAD~1' }}
+          if git rev-parse --verify --quiet "$BASE" >/dev/null; then
+            review-board --git "$BASE..HEAD" --format sarif --out review.sarif
+            review-board --git "$BASE..HEAD" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"multi-agent-code-review-board","rules":[]}},"results":[]}]}' > review.sarif
+          fi
+      - uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: review.sarif
+          category: multi-agent-code-review-board
