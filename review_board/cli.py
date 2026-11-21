@@ -19,7 +19,7 @@ from pathlib import Path
 import httpx
 
 from .board import review
-from .diff import SourceError, from_git, from_github_pr, parse_unified_diff
+from .diff import SourceError, from_git, from_github_pr, from_snapshot, parse_unified_diff
 from .models import Severity
 from .report import to_json, to_markdown, to_sarif
 
@@ -43,7 +43,10 @@ def main(argv: list[str] | None = None) -> int:
     src.add_argument("--git", metavar="BASE[..HEAD]", help="review BASE...HEAD of a local repository")
     src.add_argument("--diff", type=Path, help="review a unified diff file ('-' for stdin)")
     src.add_argument("--pr", help="review a GitHub pull request: owner/repo#123 or URL")
-    p.add_argument("--repo", default=".", help="repository path for --git (default: current directory)")
+    src.add_argument("--all", metavar="REF", nargs="?", const="HEAD",
+                     help="audit the whole codebase at REF (default HEAD) as if every line were new")
+    p.add_argument("--repo", default=".", help="repository path for --git/--all (default: current directory)")
+    p.add_argument("--max-files", type=int, default=2000, help="limit for --all")
     p.add_argument("--format", choices=["markdown", "json", "sarif"], default="markdown")
     p.add_argument("--out", type=Path, help="write the report to a file")
     p.add_argument("--fail-on", choices=[s.label for s in Severity] + ["never"], default="never",
@@ -64,6 +67,8 @@ def main(argv: list[str] | None = None) -> int:
         elif args.diff:
             text = sys.stdin.read() if str(args.diff) == "-" else args.diff.read_text(encoding="utf-8")
             files = parse_unified_diff(text)
+        elif args.all:
+            files = from_snapshot(args.repo, args.all, args.max_files)
         else:
             files, meta = from_github_pr(args.pr)
     except (SourceError, OSError) as exc:
