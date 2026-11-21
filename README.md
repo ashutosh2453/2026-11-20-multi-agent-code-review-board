@@ -62,6 +62,8 @@ pip install -e ".[dev]"
 review-board --git main                       # review main...HEAD of the current repo
 review-board --git main..feature --repo ../app
 review-board --diff changes.patch             # or: git diff | review-board --diff -
+review-board --all                            # audit the whole codebase at HEAD (first review of an existing repo)
+review-board --git 4b825dc642cb6eb9a060e54bf8d69288fbee4904..HEAD   # empty tree: the entire history as one diff
 review-board --pr octo/app#42                 # public PRs work without a token
 review-board --pr octo/app#42 --post          # post as a PR review with inline comments (GITHUB_TOKEN)
 
