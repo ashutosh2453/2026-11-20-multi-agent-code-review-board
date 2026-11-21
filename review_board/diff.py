@@ -64,13 +64,17 @@ def parse_unified_diff(text: str) -> list[ChangedFile]:
     return files
 
 
-def from_git(repo: str | Path, base: str, head: str = "HEAD") -> list[ChangedFile]:
-    """Diff base...head in a local repository and attach the full head version of each file."""
-    repo = Path(repo)
-    for ref in (base, head):
-        if not re.fullmatch(r"[\w./@^~{}-]+", ref) or ref.startswith("-"):
-            raise SourceError(f"suspicious git ref {ref!r}")
+EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"  # git's well-known empty tree object
+SKIP_DIRS = re.compile(r"(^|/)(node_modules|vendor|dist|build|\.venv|venv|__pycache__|\.git)/")
+BINARY_EXT = re.compile(r"\.(png|jpe?g|gif|ico|pdf|zip|gz|mp4|mov|woff2?|ttf|pyc|so|dll|exe|bin|lock)$", re.I)
 
+
+def _check_ref(ref: str) -> None:
+    if not re.fullmatch(r"[\w./@^~{}-]+", ref) or ref.startswith("-"):
+        raise SourceError(f"suspicious git ref {ref!r}")
+
+
+def _git_runner(repo: Path):
     def git(*args: str) -> str:
         try:
             out = subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True).stdout
@@ -80,8 +84,26 @@ def from_git(repo: str | Path, base: str, head: str = "HEAD") -> list[ChangedFil
             raise SourceError("git is not installed") from exc
         except subprocess.CalledProcessError as exc:
             raise SourceError(exc.stderr.decode("utf-8", errors="replace").strip() or "git failed") from exc
+    return git
 
-    files = parse_unified_diff(git("diff", "--no-color", "--unified=3", f"{base}...{head}"))
+
+def from_git(repo: str | Path, base: str, head: str = "HEAD") -> list[ChangedFile]:
+    """Diff base...head in a local repository and attach the full head version of each file.
+
+    Falls back to a direct base..head diff when the two have no merge base, e.g. when the
+    base is git's empty tree (review a whole history) or the branches are unrelated.
+    """
+    repo = Path(repo)
+    for ref in (base, head):
+        _check_ref(ref)
+    git = _git_runner(repo)
+    try:
+        diff = git("diff", "--no-color", "--unified=3", f"{base}...{head}")
+    except SourceError as exc:
+        if "merge base" not in str(exc).lower() and base != EMPTY_TREE:
+            raise
+        diff = git("diff", "--no-color", "--unified=3", base, head)
+    files = parse_unified_diff(diff)
     for f in files:
         if f.status != "deleted":
             try:
@@ -89,6 +111,34 @@ def from_git(repo: str | Path, base: str, head: str = "HEAD") -> list[ChangedFil
                 f.new_source = content if len(content) <= MAX_SOURCE_BYTES else None
             except SourceError:
                 f.new_source = None
+    return files
+
+
+def from_snapshot(repo: str | Path, ref: str = "HEAD", max_files: int = 2000) -> list[ChangedFile]:
+    """Audit every tracked text file at `ref` as if all its lines were newly added.
+
+    Useful for a first review of an existing codebase. Vendored/build directories and
+    binary files are skipped; `max_files` bounds the work.
+    """
+    _check_ref(ref)
+    git = _git_runner(Path(repo))
+    paths = [p for p in git("ls-tree", "-r", "--name-only", ref).split("\n")
+             if p and not SKIP_DIRS.search(p) and not BINARY_EXT.search(p)]
+    if len(paths) > max_files:
+        raise SourceError(f"{len(paths)} files at {ref}; raise --max-files or review a diff instead")
+    files: list[ChangedFile] = []
+    for path in paths:
+        try:
+            content = git("show", f"{ref}:{path}")
+        except SourceError:
+            continue
+        if "\x00" in content[:8000] or len(content) > MAX_SOURCE_BYTES:
+            continue  # binary or too large
+        normalised = content.replace("\r\n", "\n")
+        lines = normalised.split("\n")
+        if lines and lines[-1] == "":
+            lines = lines[:-1]
+        files.append(ChangedFile(path, "added", {i: line for i, line in enumerate(lines, start=1)}, 0, normalised))
     return files
 
 

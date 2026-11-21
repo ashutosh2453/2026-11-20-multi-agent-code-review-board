@@ -292,3 +292,35 @@ def test_cli_exit_codes(tmp_path, capsys):
     assert main(["--diff", str(patch), "--fail-on", "medium"]) == 1
     assert main(["--diff", str(tmp_path / "missing.patch")]) == 2
     assert main(["--diff", str(patch), "--post"]) == 2
+
+
+# ---------------------------------------------------------------- whole-codebase audits (weekly-review improvement)
+
+def test_snapshot_audits_every_tracked_text_file(repo):
+    from review_board.diff import from_snapshot
+
+    (repo / "node_modules").mkdir()
+    (repo / "node_modules" / "lib.js").write_text("eval(x)\n")
+    (repo / "logo.png").write_bytes(b"\x89PNG\r\n\x1a\n\x00\x00")
+    subprocess.run(["git", "-C", str(repo), "add", "-f", "."], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(repo), "commit", "-q", "-m", "assets"], check=True, capture_output=True)
+    files = from_snapshot(repo, "HEAD")
+    assert [f.path for f in files] == ["app.py"]  # vendored dirs and binaries skipped
+    assert files[0].status == "added" and files[0].added_lines[7] == "    os.system(cmd)"
+    r, _ = review(files)
+    assert any(f.rule == "shell-injection" for f in r.findings)
+    with pytest.raises(SourceError, match="raise --max-files"):
+        from_snapshot(repo, "HEAD", max_files=0)
+
+
+def test_git_review_from_the_empty_tree_and_unrelated_history(repo):
+    from review_board.diff import EMPTY_TREE
+
+    files = from_git(repo, EMPTY_TREE, "feature")
+    assert [f.path for f in files] == ["app.py"] and files[0].status == "added"
+
+
+def test_cli_all_mode(repo, capsys):
+    assert main(["--all", "feature", "--repo", str(repo), "--format", "json"]) == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["verdict"] == "request_changes"
